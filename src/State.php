@@ -30,6 +30,7 @@ class State
     /**
      * @todo Try to make it static
      *
+     * 
      * @return array
      */
     public function generateRandomGround(): array
