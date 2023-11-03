@@ -65,6 +65,21 @@ class State
 
     public function canMove(int $player, array $direction): bool
     {
+        $position = $this->getPosition($player, $direction);
+        if (
+            in_array(-1, $position) ||
+            $position[0] >= $this->n ||
+            $position[1] >= $this->m ||
+            in_array($this->ground[$position[0]][$position[1]], [0, -1]) ||
+            in_array($position, $this->currents)
+        )
+            return false;
+        else
+            return true;
+    }
+
+    public function getPosition(int $player, array $direction): array
+    {
         $position = $this->currents[$player];
 
         switch ($direction) {
@@ -81,18 +96,18 @@ class State
                 $position[1]--;
                 break;
         }
-        if (
-            in_array(-1, $position) ||
-            $position[0] >= $this->n ||
-            $position[1] >= $this->m ||
-            in_array($this->ground[$position[0]][$position[1]], [0, -1]) ||
-            in_array($position, $this->currents)
-        )
-            return false;
-        else
-            return true;
+        return $position;
     }
 
+    /**
+     * Summary of move
+     * 
+     * @todo try to use cloning
+     * 
+     * @param int $player
+     * @param array $direction
+     * @return \src\State
+     */
     public function move(int $player, array $direction): self
     {
         $newCurrent = $this->currents;
@@ -125,11 +140,12 @@ class State
         $y = rand(0, $this->m - 1);
         if (!in_array([$x, $y], $this->currents)) {
             $this->currents[] = [$x, $y];
+            $this->putPlayers();
         } else
             $this->putPlayers();
     }
 
-    public function isFinal(): bool
+    public function win(): bool
     {
         for ($i = 0; $i < $this->n; $i++) {
             for ($j = 0; $j < $this->m; $j++) {
@@ -140,15 +156,47 @@ class State
         return true;
     }
 
+    public function isFinal(): bool
+    {
+        return !in_array(true, $this->playersCanMove(), true);
+    }
+
+    public function playerCanMove(int $player): bool
+    {
+        return $this->canMove($player, State::UP) ||
+            $this->canMove($player, State::DOWN) ||
+            $this->canMove($player, State::RIGHT) ||
+            $this->canMove($player, State::LEFT);
+    }
+
+    public function playersCanMove(): array
+    {
+        for ($i = 0; $i < $this->players; $i++)
+            $playersCanMove[] = $this->playerCanMove($i);
+        return $playersCanMove;
+    }
+
+    public function lose(): bool
+    {
+        return !$this->win() && $this->isFinal();
+    }
+
     public function isEqualTo(State $state): bool
     {
-        $c = count(
+        return $this->countPlayersNotInSamePositions($state) === 0 &&
+            $this->ground === $state->ground
+            ? true :
+            false;
+    }
+
+    public function countPlayersNotInSamePositions(State $state): int
+    {
+        return count(
             array_filter(
                 $this->currents,
                 fn($value) => array_search($value, $state->currents) === false
             )
         );
-        return $this->ground === $state->ground && $c === 0 ? true : false;
     }
 
     public function generateSimpleGround(array $ground, array $num): array
