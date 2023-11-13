@@ -9,47 +9,65 @@ use src\State;
 $file = file_get_contents('initialGround.json');
 $initialGround = json_decode($file);
 
-array_push(
-    Game::$states,
-    new State(
-        count($initialGround),
-        count($initialGround[0]),
-        1,
-        [[1, 1]]
-    )
+$state1 = new State(
+    count($initialGround),
+    count($initialGround[0]),
+    1,
+    [[1, 1]],
+    0,
+    max(array_merge(...$initialGround))
 );
 
-Game::$states[0]->putPlayers();
-Game::$states[0]->ground = $initialGround;
-// Game::$states[0]->ground = Game::$states[0]->generateRandomGround();
+$state1->putPlayers();
+$state1->ground = $initialGround;
 
-Game::draw(Game::$states[0]);
-Game::showPlayers(Game::$states[0]);
+//Game::$states[0]->putPlayers();
+//Game::$states[0]->ground = $initialGround;
+//// Game::$states[0]->ground = Game::$states[0]->generateRandomGround();
+//
+//Game::draw(Game::$states);
+Game::draw([$state1]);
+//$validStates = $state1->validGrounds();
+//Game::draw($validStates);
+//
+//foreach ($validStates as $validState) {
+//    Game::draw($validState->validGrounds());
+//}
 
-// array_push(Game::$validStates, ...Game::$states[0]->validGrounds());
-// $new = $validStates[array_key_last($validStates)]->validGrounds();
-// $xx = array_filter($new, function (State $state) use ($validStates) {
-//     foreach ($validStates as $value) {
-//         return $state->isEqualTo($value);
-//     }
-// });
-// if (count($xx) == 0) {
-// }
-// echo $s = serialize(Game::$states[0]);
-// print_r(array_intersect($validStates,...$validStates[array_key_last($validStates)]->validGrounds()));
+/*//DFS
+Game::$stack = new SplStack();
+Game::$stack->push($state1);
+Game::DFS($state1);
+
+$s = count(Game::$states);
+$v = count(Game::$visited);
+$f = Game::$g;
+echo "<h1>$s</h1>";
+echo "<h1>$v</h1>";
+echo "<h1>$f</h1>";
+echo '<h1>result</h1>';
+Game::draw(Game::$states);*/
+
+/*//BFS
+Game::$queue = new SplQueue();
+Game::BFS($state1);
+$s = count(Game::$states);
+$v = count(Game::$visited);
+$f = Game::$g;
+echo "<h1>$s</h1>";
+echo "<h1>$v</h1>";
+echo "<h1>$f</h1>";
+echo '<h1>result</h1>';
+Game::draw(Game::$states);*/
 
 // $state1 = new State(3, 3, 1, [[1, 1]]);
 // $state1->ground = Game::$states[0]->ground;
-// $s1 = serialize($state1);
-// echo $s0 = serialize($states[0]);
-// echo $s0[2];
 // var_dump($state1->isEqualTo(Game::$states[0]));
-// var_dump($s1 === $s0);
 
-/*if (!$states[array_key_last($states)]->isFinal()) {
+/*if (!$state1->isFinal()) {
     echo "<form action=\"index.php\" method=\"post\">";
     echo '  <select name="Player">';
-    for ($i = 0; $i < $states[array_key_last($states)]->players; $i++) {
+    for ($i = 0; $i < $state1->players; $i++) {
         echo "<option value=\"$i\"> $i </option>";
     }
     echo "  </select>
@@ -79,24 +97,8 @@ Game::showPlayers(Game::$states[0]);
             break;
     }
 
-    if ($states[array_key_last($states)]->canMove((int) $_POST['Player'], $d)) {
-        array_push($states, $states[array_key_last($states)]->move((int) $_POST['Player'], $d));
-        draw($states[array_key_last($states)]);
-        showPlayers($states[array_key_last($states)]);
+    if ($state1->canMove((int) $_POST['Player'], $d)) {
+        Game::draw([$state1->move((int) $_POST['Player'], $d)]);
+//        showPlayers($states[array_key_last($states)]);
     }
-}*/
-
-/*while ($states[array_key_last($states)]->canMove(1, State::RIGHT)) {
-    array_push($states, $states[array_key_last($states)]->move(1, State::RIGHT));
-    draw($states[array_key_last($states)]);
-    showPlayers($states[array_key_last($states)]);
-}*/
-
-/*array_push($validStates, $states[0]->validGrounds());
-for ($i = 0; $i < count($validStates[0]); $i++) {
-    echo "<h1>";
-    echo str_repeat('*******', $states[0]->n);
-    echo "</h1>";
-    draw($validStates[0][$i]);
-    showPlayers($validStates[0][$i]);
 }*/

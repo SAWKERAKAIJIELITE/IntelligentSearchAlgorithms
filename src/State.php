@@ -6,40 +6,36 @@ namespace src;
 
 class State
 {
-    const UP = [-1, 0];
+    public const UP = [-1, 0];
 
-    const DOWN = [1, 0];
+    public const DOWN = [1, 0];
 
-    const RIGHT = [0, 1];
+    public const RIGHT = [0, 1];
 
-    const LEFT = [0, -1];
+    public const LEFT = [0, -1];
 
     public array $ground;
 
-    public array $simpleGround;
-
     public function __construct(
-        public int $n,
-        public int $m,
-        public int $players = 1,
-        public array $currents = [[0, 0]]
-    ) {
-
+        public int   $n,
+        public int   $m,
+        public int   $players = 1,
+        public array $currents = [[0, 0]],
+        public int   $cost = 0,
+        public int   $max = 0
+    )
+    {
     }
 
     /**
-     * @todo Try to make it static
-     *
-     * 
      * @return array
+     * @todo Try to make it static
      */
     public function generateRandomGround(): array
     {
-        for ($i = 0; $i < $this->n; $i++) {
-            for ($j = 0; $j < $this->m; $j++) {
+        for ($i = 0; $i < $this->n; $i++)
+            for ($j = 0; $j < $this->m; $j++)
                 $c[$i][$j] = (!in_array([$i, $j], $this->currents)) ? rand(-1, 3) : rand(0, 3);
-            }
-        }
         return $c;
     }
 
@@ -101,12 +97,12 @@ class State
 
     /**
      * Summary of move
-     * 
-     * @todo try to use cloning
-     * 
+     *
      * @param int $player
      * @param array $direction
-     * @return \src\State
+     * @return State
+     * @todo try to use cloning
+     *
      */
     public function move(int $player, array $direction): self
     {
@@ -126,16 +122,26 @@ class State
                 break;
         }
         $position = $newCurrent[$player];
-        $nextState = new State($this->n, $this->m, $this->players, $newCurrent);
+        $nextState = new State($this->n, $this->m, $this->players, $newCurrent, $this->calcNewCost($position));
         $nextState->ground = $this->ground;
         $nextState->ground[$position[0]][$position[1]]--;
+        $nextState->max = max(array_merge(...$nextState->ground));
         return $nextState;
+    }
+
+    public function calcNewCost(array $position): int
+    {
+        return $this->cost + $this->max - $this->ground[$position[0]][$position[1]] + 1;
     }
 
     public function putPlayers(): void
     {
-        if (count($this->currents) == $this->players)
+        if (count($this->currents) === $this->players)
             return;
+        if (count($this->currents) > $this->players) {
+            $this->currents = array_slice($this->currents, 0, $this->players);
+            return;
+        }
         $x = rand(0, $this->n - 1);
         $y = rand(0, $this->m - 1);
         if (!in_array([$x, $y], $this->currents)) {
@@ -143,6 +149,14 @@ class State
             $this->putPlayers();
         } else
             $this->putPlayers();
+    }
+
+    /**
+     * @return bool
+     */
+    public function lose(): bool
+    {
+        return !$this->win() && $this->isFinal();
     }
 
     public function win(): bool
@@ -161,6 +175,13 @@ class State
         return !in_array(true, $this->playersCanMove(), true);
     }
 
+    public function playersCanMove(): array
+    {
+        for ($i = 0; $i < $this->players; $i++)
+            $playersCanMove[] = $this->playerCanMove($i);
+        return $playersCanMove;
+    }
+
     public function playerCanMove(int $player): bool
     {
         return $this->canMove($player, State::UP) ||
@@ -169,24 +190,14 @@ class State
             $this->canMove($player, State::LEFT);
     }
 
-    public function playersCanMove(): array
-    {
-        for ($i = 0; $i < $this->players; $i++)
-            $playersCanMove[] = $this->playerCanMove($i);
-        return $playersCanMove;
-    }
-
-    public function lose(): bool
-    {
-        return !$this->win() && $this->isFinal();
-    }
-
+    /**
+     * @param State $state
+     * @return bool
+     */
     public function isEqualTo(State $state): bool
     {
         return $this->countPlayersNotInSamePositions($state) === 0 &&
-            $this->ground === $state->ground
-            ? true :
-            false;
+            $this->ground === $state->ground;
     }
 
     public function countPlayersNotInSamePositions(State $state): int
@@ -194,39 +205,8 @@ class State
         return count(
             array_filter(
                 $this->currents,
-                fn($value) => array_search($value, $state->currents) === false
+                fn($value) => !in_array($value, $state->currents)
             )
         );
-    }
-
-    public function generateSimpleGround(array $ground, array $num): array
-    {
-        // for ($i = 0; $i < $this->n; $i++) {
-        //     $ground[$i] = array_map(
-        //         function () use ($ground, $i) {
-        //             print_r($ground[$i]);
-        //             // if (in_array($g, $num)) {
-        //             //     print $g;
-        //             //     // $g = null;
-        //             //     // return $g;
-        //             // }
-        //         },
-        //         $ground
-        //     );
-        //     // $c[] = array_filter($ground[$i], fn($value) => !in_array($value, $num));
-        //     // print_r($c);
-        // }
-        // $c = array_map(function ($value) use ($num) {
-        //     for ($i = 0; $i < $this->m; $i++) {
-        //         if (in_array($value[$i], $num))
-        //             // print($value[$i]);
-        //             $value[$i] = null;
-        //     }
-        //     // print_r($value);
-        // }, $ground);
-        // echo '<pre>';
-        // var_dump($c);
-        // echo '</pre>';
-        return $ground;
     }
 }
