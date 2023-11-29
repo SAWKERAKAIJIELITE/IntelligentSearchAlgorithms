@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace src;
 
+use SplPriorityQueue;
 use SplQueue;
 use SplStack;
 
@@ -12,6 +13,8 @@ class Game
     public static SplStack $stack;
 
     public static SplQueue $queue;
+
+    public static SplPriorityQueue $priorityQueue;
 
     public static int $g = 0;
 
@@ -23,38 +26,6 @@ class Game
 
     public function __construct(public State $state)
     {
-    }
-
-    public static function isNotVisited(State $state): bool
-    {
-        if (empty(self::$visited))
-            return true;
-        foreach (self::$visited as $item)
-            if ($state->isEqualTo($item)) {
-                echo '<h1>Visited</h1>';
-                return false;
-            }
-        return true;
-    }
-
-    public static function draw(array|SplStack $states): void
-    {
-        foreach ($states as $item) {
-            for ($i = 0; $i < $item->n; $i++) {
-                echo '<h1>';
-                echo str_replace([',', '-1'], [' - - - ', 'X'], implode(',', $item->ground[$i]));
-                echo '</h1>';
-            }
-            self::showPlayers($item);
-            echo "<h1>cost $item->cost</h1>";
-            echo '<hr>';
-        }
-    }
-
-    private static function showPlayers(State $state): void
-    {
-        for ($i = 0; $i < $state->players; $i++)
-            echo 'Player' . $i . ' location is ' . $state->currents[$i][0] + 1 . ' , ' . $state->currents[$i][1] + 1 . '<br>';
     }
 
     public static function DFS(State $state): bool
@@ -113,6 +84,43 @@ class Game
         return false;
     }
 
+    public static function isNotVisited($state): bool
+    {
+        if (empty(self::$visited))
+            return true;
+        foreach (self::$visited as $item)
+            if ($state->isEqualTo($item)) {
+                echo '<h1>Visited</h1>';
+                return false;
+            }
+        return true;
+    }
+
+    public static function draw(array $states): void
+    {
+        foreach ($states as $item) {
+            $cost = $item->cost ?? 0;
+            echo "<h1>cost $cost</h1>";
+            $distance = $item->heuristic() ?? 0;
+            echo "<h1>distance $distance</h1>";
+            if ($item instanceof ModifiedState)
+                $item = $item->state;
+            for ($i = 0; $i < $item->n; $i++) {
+                echo '<h1>';
+                echo str_replace([',', '-1'], [' - - - ', 'X'], implode(',', $item->ground[$i]));
+                echo '</h1>';
+            }
+            self::showPlayers($item);
+            echo '<hr>';
+        }
+    }
+
+    private static function showPlayers(State $state): void
+    {
+        for ($i = 0; $i < $state->players; $i++)
+            echo 'Player' . $i . ' location is ' . $state->currents[$i][0] + 1 . ' , ' . $state->currents[$i][1] + 1 . '<br>';
+    }
+
     public static function doesntLose(State $state): bool
     {
         if (empty(self::$loses))
@@ -123,6 +131,85 @@ class Game
                 return false;
             }
         return true;
+    }
+
+    public static function aStar(ModifiedState $modifiedState): true
+    {
+        $validStates = $modifiedState->validGrounds();
+
+        $validStates = array_filter($validStates, fn($validState) => self::isNotVisited($validState));
+
+        $winState = array_filter($validStates, fn($validState) => $validState->win());
+        if (!empty($winState)) {
+            echo '<h1>Finish!!!</h1>';
+            self::getPath(...$winState);
+            return true;
+        }
+
+        foreach ($validStates as $validState) {
+            self::draw([$validState]);
+            self::$priorityQueue->insert($validState, -($validState->cost + $validState->heuristic()));
+            self::$visited[] = $validState;
+        }
+
+        Game::$g++;
+        return Game::aStar(Game::$priorityQueue->extract());
+    }
+
+    public static function getPath($state): void
+    {
+        $fatherKey = array_search($state->fatherState, self::$visited);
+        while ($fatherKey !== false) {
+            $father = self::$visited[$fatherKey];
+            self::$states[] = $father;
+            $fatherKey = array_search($father->fatherState, self::$visited);
+        }
+    }
+
+    public static function UCS(ModifiedState $modifiedState): true
+    {
+        $validStates = $modifiedState->validGrounds();
+
+        $validStates = array_filter($validStates, fn($validState) => self::isNotVisited($validState));
+
+        $winState = array_filter($validStates, fn($validState) => $validState->win());
+        if (!empty($winState)) {
+            echo '<h1>Finish!!!</h1>';
+            self::getPath(...$winState);
+            return true;
+        }
+
+        foreach ($validStates as $validState) {
+            self::draw([$validState]);
+            self::$priorityQueue->insert($validState, -$validState->cost);
+            self::$visited[] = $validState;
+        }
+
+        Game::$g++;
+        return Game::UCS(Game::$priorityQueue->extract());
+    }
+
+    public static function hillClimbing(ModifiedState $modifiedState): true
+    {
+        $validStates = $modifiedState->validGrounds();
+
+        $validStates = array_filter($validStates, fn($validState) => self::isNotVisited($validState));
+
+        $winState = array_filter($validStates, fn($validState) => $validState->win());
+        if (!empty($winState)) {
+            echo '<h1>Finish!!!</h1>';
+            self::getPath(...$winState);
+            return true;
+        }
+
+        foreach ($validStates as $validState) {
+            self::draw([$validState]);
+            self::$priorityQueue->insert($validState, -$validState->heuristic());
+            self::$visited[] = $validState;
+        }
+
+        Game::$g++;
+        return Game::hillClimbing(Game::$priorityQueue->extract());
     }
 
     public static function BFS(State $state): void

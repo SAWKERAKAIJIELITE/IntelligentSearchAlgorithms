@@ -20,9 +20,7 @@ class State
         public int   $n,
         public int   $m,
         public int   $players = 1,
-        public array $currents = [[0, 0]],
-        public int   $cost = 0,
-        public int   $max = 0
+        public array $currents = [[0, 0]]
     )
     {
     }
@@ -106,6 +104,14 @@ class State
      */
     public function move(int $player, array $direction): self
     {
+        $nextState = $this->proceedMovement($player, $direction);
+        $position = $nextState->currents[$player];
+        $nextState->ground[$position[0]][$position[1]]--;
+        return $nextState;
+    }
+
+    public function proceedMovement(int $player, array $direction): self
+    {
         $newCurrent = $this->currents;
         switch ($direction) {
             case State::UP:
@@ -121,17 +127,9 @@ class State
                 $newCurrent[$player][1]--;
                 break;
         }
-        $position = $newCurrent[$player];
-        $nextState = new State($this->n, $this->m, $this->players, $newCurrent, $this->calcNewCost($position));
+        $nextState = new State($this->n, $this->m, $this->players, $newCurrent);
         $nextState->ground = $this->ground;
-        $nextState->ground[$position[0]][$position[1]]--;
-        $nextState->max = max(array_merge(...$nextState->ground));
         return $nextState;
-    }
-
-    public function calcNewCost(array $position): int
-    {
-        return $this->cost + $this->max - $this->ground[$position[0]][$position[1]] + 1;
     }
 
     public function putPlayers(): void
